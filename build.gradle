@@ -1,0 +1,41 @@
+apply plugin: 'application'
+apply plugin: 'groovy'
+
+sourceCompatibility = 1.8
+
+mainClassName = "com.iotspear.agent.EntryPoint"
+
+version = '0.1'
+
+repositories {
+    // Use 'jcenter' for resolving your dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': mainClassName,
+                   'Implementation-Version': version
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it).matching {
+            exclude { it.path.contains('META-INF') } }
+        }
+    }
+}
+
+dependencies {
+
+    compile 'org.slf4j:log4j-over-slf4j:1.7.25'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+    compile 'com.google.inject:guice:4.2.0'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.5'
+    compile 'com.mashape.unirest:unirest-java:1.4.9'
+
+    annotationProcessor 'org.projectlombok:lombok:1.16.18'
+    compileOnly 'org.projectlombok:lombok:1.16.18'
+
+    testCompile 'org.spockframework:spock-core:1.1-groovy-2.4'
+}
