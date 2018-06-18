@@ -28,7 +28,7 @@ public class RelayClient implements RequestsRelay {
     public RelayClient(ObjectMapper mapper, @Named("relayHostName") String relayHostName) {
 
         Unirest.setObjectMapper(mapper);
-        Unirest.setTimeouts(10000, 120000);
+        Unirest.setTimeouts(10000, 30000);
 
 //      Unirest.setProxy(new HttpHost("")); // @TODO: make available in Config as a proxy option
 

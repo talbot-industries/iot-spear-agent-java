@@ -4,21 +4,29 @@ import com.iotspear.agent.data.AgentResponse;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.async.Callback;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.Optional;
+import java.io.InputStream;
 
-public class FutureResponse extends FutureAdapter<AgentResponse> implements Callback<String> {
+@Slf4j
+public class FutureResponse extends FutureAdapter<AgentResponse> implements Callback<InputStream> {
 
     @Override
-    public void completed(HttpResponse<String> response) {
+    public void completed(HttpResponse<InputStream> response) {
 
-        promise.complete(
-                new AgentResponse(
-                        response.getStatus(),
-                        response.getHeaders(),
-                        Optional.ofNullable(response.getBody()).orElse("")
-                )
-        );
+        try {
+            promise.complete(
+                    new AgentResponse(
+                            response.getStatus(),
+                            response.getHeaders(),
+                            Base64Source.fromStream(response.getBody())
+                    )
+            );
+        } catch (Exception error) {
+
+            log.error("Completion Error", error);
+            promise.completeExceptionally(error);
+        }
     }
 
     @Override

@@ -14,6 +14,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -41,7 +42,7 @@ public class ProxyClient implements RequestDevice {
         val url = accountHost.get().orElse(deviceHostName) + request.getUri();
         val headers = request.getHeaders().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0)));
 
-        uniRestRequest(request.getVerb(), url, headers, request.getBody()).asStringAsync(callback);
+        uniRestRequest(request.getVerb(), url, headers, request.getBody()).asBinaryAsync(callback);
 
         return callback.stage().thenApply(response -> {
 
@@ -64,7 +65,7 @@ public class ProxyClient implements RequestDevice {
             case HEAD:
             case GET:   return new GetRequest(httpMethod, url).headers(headers);
 
-            default:    return new HttpRequestWithBody(httpMethod, url).headers(headers).body(body);
+            default:    return new HttpRequestWithBody(httpMethod, url).headers(headers).body(Base64.getDecoder().decode(body));
         }
     }
 }
