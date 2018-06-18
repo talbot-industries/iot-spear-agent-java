@@ -5,12 +5,20 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.async.Callback;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
+import java.util.Optional;
+
 public class FutureResponse extends FutureAdapter<AgentResponse> implements Callback<String> {
 
     @Override
     public void completed(HttpResponse<String> response) {
 
-        promise.complete(new AgentResponse(response.getStatus(), response.getHeaders(), response.getBody()));
+        promise.complete(
+                new AgentResponse(
+                        response.getStatus(),
+                        response.getHeaders(),
+                        Optional.ofNullable(response.getBody()).orElse("")
+                )
+        );
     }
 
     @Override
