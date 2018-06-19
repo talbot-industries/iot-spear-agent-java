@@ -9,5 +9,5 @@ import java.util.function.Supplier;
 
 public interface RequestDevice {
 
-    CompletionStage<AgentResponse> processRequest(ProxyRequest request, Supplier<Optional<String>> accountHost);
+    CompletionStage<AgentResponse> processRequest(ProxyRequest request, String publicHost, Supplier<Optional<String>> accountHost);
 }

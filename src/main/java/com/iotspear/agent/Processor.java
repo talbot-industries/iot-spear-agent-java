@@ -55,9 +55,10 @@ public class Processor {
                 return CompletableFuture.allOf(results.toArray(CompletableFuture[]::new));
             };
 
+            val publicHost = String.format("https://%s.iotspear.com", bearerInfo.getClaim().getDevice());
             val accountHost = Optional.ofNullable(bearerInfo.getClaim().getHost()).filter(not(Strings::isNullOrEmpty));
 
-            final Function<ProxyRequest, CompletionStage<AgentResponse>> processRequest = response -> requestDevice.processRequest(response, () -> accountHost);
+            final Function<ProxyRequest, CompletionStage<AgentResponse>> processRequest = response -> requestDevice.processRequest(response, publicHost, () -> accountHost);
             final Function<Stream<ProxyRequest>, Stream<ProcessedRequest>> processRequests = requests -> requests.map(request -> request.toProcessed(processRequest));
 
             return requestsRelay.getRequests(bearerInfo.getToken()).

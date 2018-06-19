@@ -15,9 +15,11 @@ import lombok.val;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -33,13 +35,22 @@ public class ProxyClient implements RequestDevice {
     }
 
     @Override
-    public CompletionStage<AgentResponse> processRequest(ProxyRequest request, Supplier<Optional<String>> accountHost) {
+    public CompletionStage<AgentResponse> processRequest(ProxyRequest request, String publicHost, Supplier<Optional<String>> accountHost) {
 
         log.info(String.format("Processing Request Id: %s from %s - %s %s", request.getId(), request.getIp(), request.getVerb(), request.getUri()));
 
-        val callback = new FutureResponse();
+        val privateHost = accountHost.get().orElse(deviceHostName);
 
-        val url = accountHost.get().orElse(deviceHostName) + request.getUri();
+        final Function<Map<String, List<String>>, Map<String, List<String>>> headersTransformer = headers ->
+                headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry ->
+                        entry.getKey().equals("Location") ?
+                                entry.getValue().stream().map(header ->
+                                        header.replace(privateHost, publicHost)).collect(Collectors.toList()) :
+                                entry.getValue()));
+
+        val callback = new FutureResponse(headersTransformer);
+
+        val url = privateHost + request.getUri();
         val headers = request.getHeaders().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0)));
 
         uniRestRequest(request.getVerb(), url, headers, request.getBody()).asBinaryAsync(callback);
