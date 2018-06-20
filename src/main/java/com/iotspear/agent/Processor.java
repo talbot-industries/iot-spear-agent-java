@@ -37,7 +37,13 @@ public class Processor {
         log.info("Processing Requests ...");
 
         do {
-            processBatch().toCompletableFuture().join();
+            try {
+                processBatch().toCompletableFuture().join();
+
+            } catch (Throwable error) {
+
+                log.error("Error processing requests", error);
+            }
         } while (true);
     }
 
@@ -69,7 +75,7 @@ public class Processor {
 
         }).exceptionally(error -> {
 
-            log.error("Error processing request batch", error);
+            log.error("Error processing batch", error);
 
             return CompletableFuture.allOf(CompletableFuture.completedFuture(null)).join();
         });

@@ -12,9 +12,7 @@ import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -78,7 +76,9 @@ public class RelayClient implements RequestsRelay {
 
         return callback.stage().thenApply(requests -> {
 
-            log.info(String.format("Received batch of %s Relay request(s)", requests.getBatch().size()));
+            Optional.ofNullable(requests).map(ProxyRequests::getBatch).map(List::size).ifPresent(batchSize ->
+                    log.info(String.format("Received batch of %s Relay request(s)", batchSize)));
+
             return requests;
 
         }).exceptionally(error -> {
