@@ -31,7 +31,6 @@ public class Base64Source extends ByteSource {
         } catch (IOException error) {
 
             log.error("Response Stream Error", error);
-
             return null;
         }
     }

@@ -15,6 +15,8 @@ import javax.inject.Named;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class RelayClient implements RequestsRelay {
@@ -48,7 +50,7 @@ public class RelayClient implements RequestsRelay {
 
         return callback.stage().thenApply(bearerToken -> {
 
-            val bearerInfo = Arrays.stream(bearerToken.split("\\.")).
+            val bearerInfo = Arrays.stream(bearerToken.split(Pattern.quote("."))).
                     skip(1).
                     findFirst().
                     map(claimBase64 -> Base64.getDecoder().decode(claimBase64)).

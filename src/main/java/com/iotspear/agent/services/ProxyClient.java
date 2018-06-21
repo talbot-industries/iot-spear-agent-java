@@ -1,6 +1,8 @@
 package com.iotspear.agent.services;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharStreams;
 import com.iotspear.agent.data.AgentResponse;
 import com.iotspear.agent.data.ProxyRequest;
 import com.iotspear.agent.helpers.FutureResponse;
@@ -14,13 +16,16 @@ import lombok.val;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -48,7 +53,37 @@ public class ProxyClient implements RequestDevice {
                                         header.replace(privateHost, publicHost)).collect(Collectors.toList()) :
                                 entry.getValue()));
 
-        val callback = new FutureResponse(headersTransformer);
+        final BiFunction<Map<String, List<String>>, InputStream, InputStream> bodyTransformer = (headers, bodyStream) -> {
+
+            val replaceableType = headers.getOrDefault("Content-Type", ImmutableList.of()).stream().findFirst().filter(type ->
+                    type.startsWith("text/html") || type.startsWith("text/javascript"));
+
+            val replacementStream = replaceableType.flatMap(contentType -> {
+
+                log.debug(String.format("Replacing host names in file of Content-Type %s", contentType));
+
+                val charset = Arrays.stream(contentType.split("charset=")).skip(1).findFirst().orElse("UTF-8");
+
+                try {
+                    val bodyReader = new InputStreamReader(bodyStream, charset);
+                    val bodyText = CharStreams.toString(bodyReader);
+                    val convertedText = bodyText.replace(privateHost, publicHost);
+
+                    final InputStream convertedStream = new ByteArrayInputStream(convertedText.getBytes(charset));
+
+                    return Optional.of(convertedStream);
+
+                } catch (Exception error) {
+
+                    log.error(String.format("Failed to convert Body text of Content-Type: %s", contentType), error);
+                    return Optional.empty();
+                }
+            });
+
+            return replacementStream.orElse(bodyStream);
+        };
+
+        val callback = new FutureResponse(headersTransformer, bodyTransformer);
 
         val url = privateHost + request.getUri();
         val headers = request.getHeaders().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0)));
