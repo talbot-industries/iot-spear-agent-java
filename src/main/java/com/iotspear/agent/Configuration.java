@@ -21,13 +21,14 @@ public class Configuration extends AbstractModule implements EnvironmentBinder {
     @Override
     public Map<String, Map.Entry<String, Boolean>> envDefaults() {
 
-        return ImmutableMap.of(
-                "IOT_SPEAR_DEVICE_ACCESS_ID", EnvironmentBinder.setting("00000000-0000-0000-0000-000000000000", false),
-                "IOT_SPEAR_DEVICE_SECRET_KEY", EnvironmentBinder.setting("aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890", true),
-                "IOT_SPEAR_DEVICE_HOST_NAME", EnvironmentBinder.setting("http://localhost:8080", false),
-                "IOT_SPEAR_RELAY_HOST_NAME", EnvironmentBinder.setting("https://relay.iotspear.com", false),
-                "IOT_SPEAR_DEBUG_LOGGING", EnvironmentBinder.setting("false", false)
-        );
+        return ImmutableMap.<String, Map.Entry<String, Boolean>>builder().
+                put("IOT_SPEAR_DEVICE_ACCESS_ID", EnvironmentBinder.setting("00000000-0000-0000-0000-000000000000", false)).
+                put("IOT_SPEAR_DEVICE_SECRET_KEY", EnvironmentBinder.setting("aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890", true)).
+                put("IOT_SPEAR_DEVICE_HOST_NAME", EnvironmentBinder.setting("http://localhost:8080", false)).
+                put("IOT_SPEAR_RELAY_HOST_NAME", EnvironmentBinder.setting("https://relay.iotspear.com", false)).
+                put("IOT_SPEAR_DEBUG_LOGGING", EnvironmentBinder.setting("false", false)).
+                put("IOT_SPEAR_PARALLEL_FACTOR", EnvironmentBinder.setting("2", false)).
+                build();
     }
 
     @Override
@@ -49,6 +50,14 @@ public class Configuration extends AbstractModule implements EnvironmentBinder {
                 Boolean::parseBoolean,
                 ImmutableMap.of(
                         "debugLogging", "IOT_SPEAR_DEBUG_LOGGING"
+                )
+        );
+
+        bindConfiguration(
+                Integer.class,
+                Integer::parseInt,
+                ImmutableMap.of(
+                        "parallelFactor", "IOT_SPEAR_PARALLEL_FACTOR"
                 )
         );
 

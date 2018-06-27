@@ -8,11 +8,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.iotspear.agent.helpers.FluentHelper.not;
@@ -23,18 +25,35 @@ public class Processor {
     private final RelayCredentials relayCredentials;
     private final RequestsRelay requestsRelay;
     private final RequestDevice requestDevice;
+    private final int parallelFactor;
 
     @Inject
-    public Processor(RelayCredentials relayCredentials, RequestsRelay requestsRelay, RequestDevice requestDevice) {
+    public Processor(RelayCredentials relayCredentials,
+                     RequestsRelay requestsRelay,
+                     RequestDevice requestDevice,
+                     @Named("parallelFactor") int parallelFactor) {
 
         this.relayCredentials = relayCredentials;
         this.requestsRelay = requestsRelay;
         this.requestDevice = requestDevice;
+        this.parallelFactor = parallelFactor;
+    }
+
+    public void initiate() {
+
+        log.info("Processing Requests ...");
+
+        IntStream.rangeClosed(1, parallelFactor).parallel().mapToObj(this::threadedProcessor).forEach(Thread::start);
+    }
+
+    private Thread threadedProcessor(Integer count) {
+
+        return new Thread(this::processRequests, String.format("Processor-Thread-%d", count));
     }
 
     public void processRequests() {
 
-        log.info("Processing Requests ...");
+        log.info("Starting a Processor ...");
 
         do {
             try {

@@ -29,6 +29,6 @@ public class EntryPoint {
             ((Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).setLevel(Level.DEBUG);
         }
 
-        injector.getInstance(Processor.class).processRequests();
+        injector.getInstance(Processor.class).initiate();
     }
 }
