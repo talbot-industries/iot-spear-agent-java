@@ -43,7 +43,18 @@ public class Processor {
 
         log.info("Processing Requests ...");
 
-        IntStream.rangeClosed(1, parallelFactor).parallel().mapToObj(this::threadedProcessor).forEach(Thread::start);
+        IntStream.rangeClosed(1, parallelFactor).mapToObj(this::threadedProcessor).forEach(processor -> {
+
+            processor.start();
+
+            try {
+                Thread.sleep(2000); // Wait two seconds before starting the next processor thread
+
+            } catch (Throwable error) {
+
+                log.error("Failed to start Processor thread", error);
+            }
+        });
     }
 
     private Thread threadedProcessor(Integer count) {
