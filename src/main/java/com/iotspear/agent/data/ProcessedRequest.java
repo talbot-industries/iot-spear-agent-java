@@ -9,6 +9,8 @@ public class ProcessedRequest {
 
     private String id;
 
+    private String clientId;
+
     private String correlation;
 
     CompletionStage<AgentResponse> response;

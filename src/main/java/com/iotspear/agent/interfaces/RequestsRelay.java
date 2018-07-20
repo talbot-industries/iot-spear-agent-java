@@ -13,5 +13,5 @@ public interface RequestsRelay {
 
     CompletionStage<ProxyRequests> getRequests(String bearerToken);
 
-    CompletionStage<Void> putResponse(String bearerToken, String requestId, String correlation, AgentResponse response);
+    CompletionStage<Void> putResponse(String bearerToken, String requestId, String clientId, String correlation, AgentResponse response);
 }

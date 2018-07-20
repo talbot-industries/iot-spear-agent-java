@@ -3,10 +3,12 @@ package com.iotspear.agent.services;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.iotspear.agent.data.*;
+import com.iotspear.agent.helpers.ContextClient;
 import com.iotspear.agent.helpers.FutureCallback;
 import com.iotspear.agent.interfaces.RequestsRelay;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.utils.ClientFactory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -15,7 +17,6 @@ import javax.inject.Named;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -25,13 +26,18 @@ public class RelayClient implements RequestsRelay {
     private final ObjectMapper mapper;
 
     @Inject
-    public RelayClient(ObjectMapper mapper, @Named("relayHostName") String relayHostName) {
-
-        Unirest.setObjectMapper(mapper);
-        Unirest.setTimeouts(10000, 30000);
+    public RelayClient(ObjectMapper mapper,
+                       @Named("relayHostName") String relayHostName,
+                       @Named("parallelFactor") int parallelFactor) {
 
 //      Unirest.setProxy(new HttpHost("")); // @TODO: make available in Config as a proxy option
 
+        Unirest.setTimeouts(10000, 30000);
+        Unirest.setConcurrency(parallelFactor * 30, parallelFactor * 15);
+        Unirest.setObjectMapper(mapper);
+
+        Unirest.setAsyncHttpClient(new ContextClient(ClientFactory.getAsyncHttpClient()));  // Must be performed after other Unirest
+                                                                                            // .set() calls or client is refreshed again
         this.mapper = mapper;
         this.relayHostName = relayHostName;
     }
@@ -91,9 +97,9 @@ public class RelayClient implements RequestsRelay {
     }
 
     @Override
-    public CompletionStage<Void> putResponse(String bearerToken, String requestId, String correlation, AgentResponse response) {
+    public CompletionStage<Void> putResponse(String bearerToken, String requestId, String clientId, String correlation, AgentResponse response) {
 
-        log.info(String.format("Sending response for Relay request Id: %s", requestId));
+        log.info(String.format("Sending response for Relay request Id: %s (Client Id: %s)", requestId, clientId));
 
         val callback = new FutureCallback<String>();
 
@@ -106,12 +112,12 @@ public class RelayClient implements RequestsRelay {
 
         val result = callback.stage().thenApply(ignored -> {
 
-            log.info(String.format("Successfully sent response for Relay request Id: %s", requestId));
+            log.info(String.format("Successfully sent response for Relay request Id: %s (Client Id: %s)", requestId, clientId));
             return null;
 
         }).exceptionally(error -> {
 
-            log.error(String.format("Failed to send response for Relay request Id: %s", requestId), error);
+            log.error(String.format("Failed to send response for Relay request Id: %s (Client Id: %s)", requestId, clientId), error);
             return null;
         });
 

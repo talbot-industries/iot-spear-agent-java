@@ -1,5 +1,6 @@
 package com.iotspear.agent.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Value;
 
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @Value
+@JsonIgnoreProperties(ignoreUnknown=true)
 public class ProxyRequest {
 
     private String id;
@@ -15,6 +17,8 @@ public class ProxyRequest {
     private String correlation;
 
     private String t;
+
+    private String clientId;
 
     private String ip;
 
@@ -31,6 +35,6 @@ public class ProxyRequest {
 
     public ProcessedRequest toProcessed(Function<ProxyRequest, CompletionStage<AgentResponse>> response) {
 
-        return new ProcessedRequest(id, correlation, response.apply(this));
+        return new ProcessedRequest(id, clientId, correlation, response.apply(this));
     }
 }

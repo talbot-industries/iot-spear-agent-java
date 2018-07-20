@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.iotspear.agent.data.AgentResponse;
 import com.iotspear.agent.data.ProxyRequest;
+import com.iotspear.agent.helpers.ContextClient;
 import com.iotspear.agent.helpers.FutureResponse;
 import com.iotspear.agent.interfaces.RequestDevice;
 import com.mashape.unirest.http.HttpMethod;
@@ -24,8 +25,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,7 +41,7 @@ public class ProxyClient implements RequestDevice {
     @Override
     public CompletionStage<AgentResponse> processRequest(ProxyRequest request, String publicHost, Supplier<Optional<String>> accountHost) {
 
-        log.info(String.format("Processing Request Id: %s from %s - %s %s", request.getId(), request.getIp(), request.getVerb(), request.getUri()));
+        log.info(String.format("Processing Request Id: %s from %s (Client Id: %s) - %s %s", request.getId(), request.getIp(), request.getClientId(), request.getVerb(), request.getUri()));
 
         val privateHost = accountHost.get().orElse(deviceHostName);
 
@@ -88,11 +87,12 @@ public class ProxyClient implements RequestDevice {
         val url = privateHost + request.getUri();
         val headers = request.getHeaders().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().get(0)));
 
+        ContextClient.proxyRequest.set(request);
         uniRestRequest(request.getVerb(), url, headers, request.getBody()).asBinaryAsync(callback);
 
         return callback.stage().thenApply(response -> {
 
-            log.info(String.format("Processed Request Id: %s - %s", request.getId(), response.getStatus()));
+            log.info(String.format("Processed Request Id: %s (Client Id: %s) - %s", request.getId(), request.getClientId(), response.getStatus()));
             return response;
 
         }).exceptionally(error -> {

@@ -82,10 +82,14 @@ public class Processor {
         return requestsRelay.login(relayCredentials).thenCompose(bearerInfo -> {
 
             final Function<Stream<ProcessedRequest>, CompletionStage<Void>> putResponses = processed -> {
-
                 val results = processed.map(request -> request.getResponse().thenCompose(response ->
 
-                        requestsRelay.putResponse(bearerInfo.getToken(), request.getId(), request.getCorrelation(), response)
+                        requestsRelay.putResponse(
+                                bearerInfo.getToken(),
+                                request.getId(),
+                                request.getClientId(),
+                                request.getCorrelation(),
+                                response)
                 ));
 
                 return CompletableFuture.allOf(results.toArray(CompletableFuture[]::new));
@@ -95,7 +99,7 @@ public class Processor {
             val accountHost = Optional.ofNullable(bearerInfo.getClaim().getHost()).filter(not(Strings::isNullOrEmpty));
 
             final Function<ProxyRequest, CompletionStage<AgentResponse>> processRequest = response -> requestDevice.processRequest(response, publicHost, () -> accountHost);
-            final Function<Stream<ProxyRequest>, Stream<ProcessedRequest>> processRequests = requests -> requests.map(request -> request.toProcessed(processRequest));
+            final Function<Stream<ProxyRequest>, Stream<ProcessedRequest>> processRequests = requests -> requests.parallel().map(request -> request.toProcessed(processRequest));
 
             return requestsRelay.getRequests(bearerInfo.getToken()).
                     thenApply(ProxyRequests::getBatch).
