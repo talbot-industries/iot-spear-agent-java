@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 ./gradlew build
+
+docker build -t talbotindustries/iot-spear-agent-java-base --file Dockerfile.base .
+
 docker build -t talbotindustries/iot-spear-agent-java .
 
 # To run within Docker:
