@@ -27,6 +27,7 @@ public class Configuration extends AbstractModule implements EnvironmentBinder {
                 put("IOT_SPEAR_DEVICE_HOST_NAME", EnvironmentBinder.setting("http://localhost:8080", false)).
                 put("IOT_SPEAR_RELAY_HOST_NAME", EnvironmentBinder.setting("https://relay.iotspear.com", false)).
                 put("IOT_SPEAR_DEBUG_LOGGING", EnvironmentBinder.setting("false", false)).
+                put("IOT_SPEAR_SSL_CERT_CHECK", EnvironmentBinder.setting("true", false)).
                 put("IOT_SPEAR_PARALLEL_FACTOR", EnvironmentBinder.setting("2", false)).
                 build();
     }
@@ -49,7 +50,8 @@ public class Configuration extends AbstractModule implements EnvironmentBinder {
                 Boolean.class,
                 Boolean::parseBoolean,
                 ImmutableMap.of(
-                        "debugLogging", "IOT_SPEAR_DEBUG_LOGGING"
+                        "debugLogging", "IOT_SPEAR_DEBUG_LOGGING",
+                        "sslCertCheck", "IOT_SPEAR_SSL_CERT_CHECK"
                 )
         );
 

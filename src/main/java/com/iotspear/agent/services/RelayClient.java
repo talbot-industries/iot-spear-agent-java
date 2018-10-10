@@ -11,9 +11,15 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.utils.ClientFactory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.ssl.SSLContextBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -28,13 +34,33 @@ public class RelayClient implements RequestsRelay {
     @Inject
     public RelayClient(ObjectMapper mapper,
                        @Named("relayHostName") String relayHostName,
-                       @Named("parallelFactor") int parallelFactor) {
+                       @Named("parallelFactor") int parallelFactor,
+                       @Named("sslCertCheck") boolean sslCertCheck) {
 
 //      Unirest.setProxy(new HttpHost("")); // @TODO: make available in Config as a proxy option
 
         Unirest.setTimeouts(10000, 30000);
         Unirest.setConcurrency(parallelFactor * 30, parallelFactor * 15);
         Unirest.setObjectMapper(mapper);
+
+        if (!sslCertCheck) {
+
+            try {
+                log.info("** DISABLING ** SSL Certificate Checks for HTTPS calls ...");
+
+                val alwaysTrust = new SSLContextBuilder().loadTrustMaterial(null, (chain, authType) -> true).build();
+
+                val uncheckedSsl = HttpAsyncClients.custom().
+                        setSSLContext(alwaysTrust).
+                        setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE).build();
+
+                Unirest.setAsyncHttpClient(uncheckedSsl);
+
+            } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {
+
+                log.error("Failed to Disable SSL Certificate Checks");
+            }
+        }
 
         Unirest.setAsyncHttpClient(new ContextClient(ClientFactory.getAsyncHttpClient()));  // Must be performed after other Unirest
                                                                                             // .set() calls or client is refreshed again
